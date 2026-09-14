@@ -12,6 +12,6 @@
 - [x] Start the development server and verify the default welcome page on localhost.
 - [x] Stop the development server after verification.
 - [x] Commit the scaffold using a Conventional Commit message.
-- [ ] Merge the scaffold branch into `main` during rendezvous.
-- [ ] Re-run the application check on merged `main` and push `main` to `origin`.
-- [ ] Update `doc/wiki/` with the merged repository state.
+- [x] Merge the scaffold branch into `main` during rendezvous.
+- [x] Re-run the application check on merged `main` and push `main` to `origin`.
+- [x] Update `doc/wiki/` with the merged repository state.
