@@ -25,7 +25,11 @@ SECRET_KEY = 'django-insecure-8+7jq1ez4rj5uw2c6+z0wf0q&utvi=lbz@!^+_$p^+6mn6!%(@
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['itent-45-1t-2526-p21.coderange.net', 'localhost', '127.0.0.1']
+CSRF_TRUSTED_ORIGINS = ['https://itent-45-1t-2526-p21.coderange.net']
+
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/'
 
 
 # Application definition
