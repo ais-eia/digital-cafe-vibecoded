@@ -44,9 +44,9 @@
 
 ## Rendezvous and Wiki Sync
 
-- [ ] Verify the feature branch and commit history before rendezvous.
-- [ ] Merge the feature branch into `main` without overwriting unrelated user changes.
-- [ ] Re-run Django checks and authentication tests on merged `main`.
-- [ ] Confirm the merged application starts and serves the authentication flow.
+- [x] Verify the feature branch and commit history before rendezvous.
+- [x] Merge the feature branch into `main` without overwriting unrelated user changes.
+- [x] Re-run Django checks and authentication tests on merged `main`.
+- [x] Confirm the merged application starts and serves the authentication flow.
 - [ ] Push the merged `main` branch to `origin`.
 - [ ] Update `doc/wiki/` with the authentication URLs, behavior, local verification commands, and current feature state.

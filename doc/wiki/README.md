@@ -2,11 +2,21 @@
 
 ## Current State
 
-The repository contains the initial Django scaffold for the Digital Cafe application. The Django project is named `digitalcafe`, and the initial application boundary is the `core` app.
+The repository contains the Django application for Digital Cafe. The Django project is named `digitalcafe`, and the application boundary is the `core` app.
 
-The requested e-commerce features are not implemented yet. The current application remains Django's generated welcome page.
+User authentication is implemented with Django's built-in `User` model and native username/password authentication. The application root is protected and currently displays a greeting for the logged-in user. Product catalog, cart, checkout, transaction history, and product administration features are not implemented yet.
 
-The scaffold is merged into `main`. Django's system check passes, and the default welcome page returns HTTP 200 from the local development server.
+The authentication feature is merged into `main`. Django's system check and five authentication tests pass. The login page returns HTTP 200, and anonymous requests to the protected root redirect to `/login/?next=/`.
+
+## Authentication
+
+- `/login/` displays the native username/password login form.
+- Invalid credentials are shown as a visible form error.
+- Successful login redirects to `/`.
+- `/` requires authentication and greets the user by username.
+- The coderange forwarding origin is trusted for Django CSRF protection during development.
+
+The login flow uses Django's session middleware and built-in authentication middleware. Create users through Django's standard admin or management commands; user registration is not part of the current feature.
 
 ## Local Setup
 
@@ -20,6 +30,13 @@ The local database is SQLite and `db.sqlite3` is ignored. The development server
 
 ```bash
 python manage.py runserver
+```
+
+Run the authentication checks with:
+
+```bash
+python manage.py check
+python manage.py test core
 ```
 
 ## Workflow
