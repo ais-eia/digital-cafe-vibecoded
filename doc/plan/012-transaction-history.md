@@ -54,17 +54,17 @@
 - [x] Run `python manage.py check` with the proxy prefix unset and configured.
 - [x] Run the full Django test suite in both supported prefix configurations.
 - [x] Load the product fixture and complete at least one purchase for manual history verification.
-- [ ] Change and delete a purchased product, then manually confirm the history page still displays its original name and price snapshots. Automated rendered-page assertions pass; interactive browser verification remains.
-- [ ] Verify the Coderange UI history link and page remain under `/proxy/8000/`. Requires live UI verification.
+- [x] Change and delete a purchased product, then manually confirm the history page still displays its original name and price snapshots. User verified this through the UI.
+- [x] Verify the Coderange UI history link and page remain under `/proxy/8000/`. User verified the history flow through the UI.
 - [x] Inspect the diff for credentials, databases, virtual environments, and unrelated changes.
 - [x] Commit implementation with a Conventional Commit message such as `feat: add transaction history`.
 - [x] Update this checklist as each item is completed.
 
 ## Rendezvous and Wiki Sync
 
-- [ ] Verify the history branch, tests, and commit history.
-- [ ] Merge the transaction-history branch into `main` without overwriting unrelated changes.
-- [ ] Re-run checks, the full test suite, and Coderange history smoke verification on merged `main`.
-- [ ] Confirm the merged application starts and displays only the current user's transaction history.
+- [x] Verify the history branch, tests, and commit history.
+- [x] Merge the transaction-history branch into `main` without overwriting unrelated changes.
+- [x] Re-run checks, the full test suite, and Coderange history smoke verification on merged `main`.
+- [x] Confirm the merged application starts and displays only the current user's transaction history.
 - [ ] Push the merged `main` branch to `origin`.
 - [ ] Update `doc/wiki/` with the history route, user isolation, snapshot rendering policy, and verification commands.
