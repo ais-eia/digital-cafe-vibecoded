@@ -1,4 +1,5 @@
 from decimal import Decimal
+from unittest.mock import patch
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -8,7 +9,7 @@ from django.test import TestCase, override_settings
 from django.test.utils import override_script_prefix
 from django.urls import NoReverseMatch, get_script_prefix, reverse
 
-from .models import CartItem, Product
+from .models import CartItem, Product, Transaction, TransactionLineItem
 from .utils import redirect_without_script_prefix
 
 
@@ -341,3 +342,149 @@ class ProxyPrefixTests(TestCase):
     def test_authentication_redirect_targets_are_unprefixed(self):
         self.assertEqual(settings.LOGIN_URL, '/login/')
         self.assertEqual(settings.LOGIN_REDIRECT_URL, '/')
+
+
+@override_settings(
+    FORCE_SCRIPT_NAME='',
+    LOGIN_URL='/login/',
+    LOGIN_REDIRECT_URL='/',
+)
+@override_script_prefix('/')
+class CheckoutTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(username='buyer')
+        self.other_user = get_user_model().objects.create_user(username='other-buyer')
+        self.product = Product.objects.create(name='House Blend', price=Decimal('3.50'))
+        self.other_product = Product.objects.create(name='Cappuccino', price=Decimal('4.75'))
+        self.client.force_login(self.user)
+        self.item = CartItem.objects.create(user=self.user, product=self.product, quantity=2)
+
+    def test_checkout_displays_editable_items_and_total(self):
+        response = self.client.get(reverse('checkout'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'House Blend')
+        self.assertContains(response, '$3.50')
+        self.assertContains(response, 'value="2"')
+        self.assertContains(response, '$7.00')
+        self.assertContains(response, 'value="complete"')
+        self.assertContains(response, f'action="{reverse("checkout")}"')
+
+    def test_checkout_updates_quantity(self):
+        response = self.client.post(
+            reverse('checkout'),
+            {'action': 'update', 'item_id': self.item.pk, 'quantity': 5},
+        )
+
+        self.assertRedirects(response, '/checkout/')
+        self.assertEqual(CartItem.objects.get(pk=self.item.pk).quantity, 5)
+
+    def test_checkout_removes_item(self):
+        response = self.client.post(
+            reverse('checkout'),
+            {'action': 'remove', 'item_id': self.item.pk},
+        )
+
+        self.assertRedirects(response, '/checkout/')
+        self.assertFalse(CartItem.objects.filter(pk=self.item.pk).exists())
+
+    def test_invalid_checkout_quantity_does_not_change_cart(self):
+        for quantity in ('0', '-1', '1.5', '100', 'not-a-number'):
+            with self.subTest(quantity=quantity):
+                response = self.client.post(
+                    reverse('checkout'),
+                    {'action': 'update', 'item_id': self.item.pk, 'quantity': quantity},
+                )
+
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, 'errorlist')
+                self.assertEqual(CartItem.objects.get(pk=self.item.pk).quantity, 2)
+
+    def test_checkout_isolates_cart_items_by_user(self):
+        other_item = CartItem.objects.create(
+            user=self.other_user,
+            product=self.other_product,
+            quantity=4,
+        )
+
+        response = self.client.post(
+            reverse('checkout'),
+            {'action': 'remove', 'item_id': other_item.pk},
+        )
+
+        self.assertRedirects(response, '/checkout/')
+        self.assertTrue(CartItem.objects.filter(pk=other_item.pk).exists())
+
+    def test_successful_checkout_creates_snapshots_total_and_clears_cart(self):
+        response = self.client.post(reverse('checkout'), {'action': 'complete'})
+
+        purchase = Transaction.objects.get(user=self.user)
+        line_item = purchase.line_items.get()
+        self.assertRedirects(response, f'/checkout/complete/{purchase.pk}/')
+        self.assertEqual(purchase.total, Decimal('7.00'))
+        self.assertEqual(line_item.product, self.product)
+        self.assertEqual(line_item.product_name, 'House Blend')
+        self.assertEqual(line_item.unit_price, Decimal('3.50'))
+        self.assertEqual(line_item.quantity, 2)
+        self.assertFalse(CartItem.objects.filter(user=self.user).exists())
+
+    def test_checkout_ignores_submitted_prices_and_totals(self):
+        response = self.client.post(
+            reverse('checkout'),
+            {'action': 'complete', 'price': '0.01', 'total': '0.01'},
+        )
+
+        self.assertRedirects(response, f'/checkout/complete/{Transaction.objects.get().pk}/')
+        self.assertEqual(Transaction.objects.get().total, Decimal('7.00'))
+
+    def test_checkout_snapshots_survive_product_change_and_delete(self):
+        self.client.post(reverse('checkout'), {'action': 'complete'})
+        purchase = Transaction.objects.get(user=self.user)
+        self.product.name = 'Renamed Coffee'
+        self.product.price = Decimal('9.99')
+        self.product.save()
+        line_item = purchase.line_items.get()
+
+        self.assertEqual(line_item.product_name, 'House Blend')
+        self.assertEqual(line_item.unit_price, Decimal('3.50'))
+        self.product.delete()
+        line_item.refresh_from_db()
+        self.assertIsNone(line_item.product)
+        self.assertEqual(line_item.product_name, 'House Blend')
+
+    def test_empty_checkout_does_not_create_transaction(self):
+        CartItem.objects.filter(user=self.user).delete()
+
+        response = self.client.post(reverse('checkout'), {'action': 'complete'})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Your checkout is empty.')
+        self.assertFalse(Transaction.objects.exists())
+
+    @patch('core.views.TransactionLineItem.objects.bulk_create')
+    def test_checkout_rolls_back_when_line_creation_fails(self, bulk_create):
+        bulk_create.side_effect = RuntimeError('line creation failed')
+
+        with self.assertRaises(RuntimeError):
+            self.client.post(reverse('checkout'), {'action': 'complete'})
+
+        self.assertFalse(Transaction.objects.exists())
+        self.assertTrue(CartItem.objects.filter(pk=self.item.pk).exists())
+
+    def test_completion_page_is_private(self):
+        self.client.post(reverse('checkout'), {'action': 'complete'})
+        purchase = Transaction.objects.get(user=self.user)
+        self.client.force_login(self.other_user)
+
+        response = self.client.get(
+            reverse('checkout-complete', args=[purchase.pk]),
+        )
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_anonymous_user_is_redirected_from_checkout(self):
+        self.client.logout()
+
+        response = self.client.get(reverse('checkout'))
+
+        self.assertRedirects(response, f'/login/?next=/checkout/')

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Checkout | Digital Cafe</title>
+</head>
+<body>
+    <main>
+        <p><a href="{% url 'cart' %}">Back to cart</a></p>
+        <h1>Checkout</h1>
+        {% if checkout_rows %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Unit price</th>
+                            <th>Quantity</th>
+                            <th>Line total</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in checkout_rows %}
+                            <tr>
+                                <td>{{ row.item.product.name }}</td>
+                                <td>${{ row.item.product.price|floatformat:2 }}</td>
+                                <td>
+                                    <form method="post" action="{% url 'checkout' %}">
+                                        {% csrf_token %}
+                                        {{ row.form.quantity }}
+                                        {{ row.form.quantity.errors }}
+                                        <input type="hidden" name="item_id" value="{{ row.item.pk }}">
+                                        <button name="action" value="update" type="submit">Update</button>
+                                    </form>
+                                </td>
+                                <td>${{ row.item.line_total|floatformat:2 }}</td>
+                                <td>
+                                    <form method="post" action="{% url 'checkout' %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="item_id" value="{{ row.item.pk }}">
+                                        <button name="action" value="remove" type="submit">Remove</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <p>Order total: ${{ total|floatformat:2 }}</p>
+                <form method="post" action="{% url 'checkout' %}">
+                    {% csrf_token %}
+                    <button name="action" value="complete" type="submit">Complete purchase</button>
+                </form>
+        {% else %}
+            <p>Your checkout is empty.</p>
+        {% endif %}
+    </main>
+</body>
+</html>
