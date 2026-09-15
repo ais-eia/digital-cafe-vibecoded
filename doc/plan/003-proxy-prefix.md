@@ -16,7 +16,7 @@
 - [ ] If Coderange forwards a trusted script-name or forwarded-prefix header, implement narrowly scoped middleware or validated request handling for that documented header; do not trust arbitrary client-supplied values.
 - [ ] If Coderange forwards `/proxy/8000` unchanged without a script-name mechanism, choose a routing/middleware solution that strips the prefix before URLconf resolution, rather than blindly adding the prefix to URL patterns.
 - [x] Preserve an explicit environment override through `DJANGO_SCRIPT_NAME`; the default is `/proxy/8000` for the current Coderange deployment, and `DJANGO_SCRIPT_NAME=''` restores direct-root local links.
-- [ ] Do not implement multiple competing prefix mechanisms or hard-code `/proxy/8000` into templates and URL patterns.
+- [x] Do not implement multiple competing prefix mechanisms or hard-code `/proxy/8000` into templates and URL patterns.
 
 ## Settings and URL Generation
 
@@ -51,9 +51,9 @@
 
 ## Rendezvous and Wiki Sync
 
-- [ ] Verify the feature branch, empirical forwarding result, and commit history.
-- [ ] Merge the proxy-prefix fix into `main` without overwriting unrelated changes.
-- [ ] Re-run checks, tests, and forwarded-URL smoke verification on merged `main`.
-- [ ] Confirm the merged application starts and generates working prefixed URLs.
+- [x] Verify the feature branch, empirical forwarding result, and commit history.
+- [x] Merge the proxy-prefix fix into `main` without overwriting unrelated changes.
+- [x] Re-run checks, tests, and forwarded-URL smoke verification on merged `main`.
+- [x] Confirm the merged application starts and generates working prefixed URLs.
 - [ ] Push the merged `main` branch to `origin`.
 - [ ] Update `doc/wiki/` with the observed Coderange forwarding behavior, selected configuration, required environment variable or proxy contract, and local verification commands.
