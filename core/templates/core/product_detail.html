@@ -9,6 +9,14 @@
         <p><a href="{% url 'home' %}">Back to coffee menu</a></p>
         <h1>{{ product.name }}</h1>
         <p>Price: ${{ product.price|floatformat:2 }}</p>
+        <p><a href="{% url 'cart' %}">View cart</a></p>
+        <form method="post" action="{% url 'product-detail' product.pk %}">
+            {% csrf_token %}
+            {{ form.quantity.label_tag }}
+            {{ form.quantity }}
+            {{ form.quantity.errors }}
+            <button type="submit">Add to cart</button>
+        </form>
     </main>
 </body>
 </html>
