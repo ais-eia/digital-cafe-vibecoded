@@ -1,11 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>Transaction history | Digital Cafe</title>
-</head>
-<body>
-    <main>
+{% extends 'core/base.html' %}
+
+{% block title %}Transaction history | Digital Cafe{% endblock %}
+
+{% block content %}
         <p><a href="{% url 'home' %}">Back to coffee menu</a></p>
         <h1>Transaction history</h1>
         {% if transactions %}
@@ -39,6 +36,4 @@
         {% else %}
             <p>No purchases yet.</p>
         {% endif %}
-    </main>
-</body>
-</html>
+{% endblock %}

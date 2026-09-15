@@ -1,11 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>Home | Digital Cafe</title>
-</head>
-<body>
-    <main>
+{% extends 'core/base.html' %}
+
+{% block title %}Home | Digital Cafe{% endblock %}
+
+{% block content %}
         <h1>Digital Cafe</h1>
         <p>Welcome, {{ request.user.username }}!</p>
         <h2>Coffee Menu</h2>
@@ -29,6 +26,4 @@
         {% else %}
             <p>No coffee products are available yet.</p>
         {% endif %}
-    </main>
-</body>
-</html>
+{% endblock %}

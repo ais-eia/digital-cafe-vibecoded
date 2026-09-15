@@ -190,6 +190,75 @@ class ProductAdminTests(TestCase):
     LOGIN_REDIRECT_URL='/',
 )
 @override_script_prefix('/')
+class AuthNavigationTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(username='nav-user')
+        self.product = Product.objects.create(name='House Blend', price=Decimal('3.50'))
+        self.client.force_login(self.user)
+
+    def test_authenticated_pages_show_navigation_and_logout_form(self):
+        urls = [
+            reverse('home'),
+            reverse('product-detail', args=[self.product.pk]),
+            reverse('cart'),
+            reverse('checkout'),
+            reverse('transaction-history'),
+        ]
+        for url in urls:
+            with self.subTest(url=url):
+                response = self.client.get(url)
+                self.assertContains(response, 'data-auth-navigation')
+                self.assertContains(response, 'Signed in as nav-user')
+                self.assertContains(response, 'method="post"')
+                self.assertContains(response, f'action="{reverse("logout")}"')
+                self.assertContains(response, 'name="csrfmiddlewaretoken"')
+
+    def test_checkout_confirmation_shows_navigation(self):
+        purchase = Transaction.objects.create(user=self.user, total=Decimal('3.50'))
+
+        response = self.client.get(reverse('checkout-complete', args=[purchase.pk]))
+
+        self.assertContains(response, 'data-auth-navigation')
+        self.assertContains(response, 'View transaction history')
+
+    def test_login_page_hides_authenticated_navigation(self):
+        self.client.logout()
+
+        response = self.client.get(reverse('login'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'data-auth-navigation')
+        self.assertNotContains(response, 'Signed in as')
+        self.assertNotContains(response, 'data-auth-navigation')
+
+    def test_logout_post_redirects_and_invalidates_session(self):
+        response = self.client.post(reverse('logout'))
+
+        self.assertRedirects(response, '/login/')
+        protected_response = self.client.get(reverse('home'))
+        self.assertRedirects(protected_response, '/login/?next=/')
+
+    def test_logout_get_does_not_log_out(self):
+        response = self.client.get(reverse('logout'))
+
+        self.assertEqual(response.status_code, 405)
+        self.assertEqual(self.client.get(reverse('home')).status_code, 200)
+
+    @override_settings(FORCE_SCRIPT_NAME='/proxy/8000')
+    @override_script_prefix('/proxy/8000')
+    def test_navigation_links_and_logout_action_include_proxy_prefix(self):
+        response = self.client.get('/', SCRIPT_NAME='/proxy/8000')
+
+        self.assertContains(response, 'href="/proxy/8000/"')
+        self.assertContains(response, 'action="/proxy/8000/logout/"')
+
+
+@override_settings(
+    FORCE_SCRIPT_NAME='',
+    LOGIN_URL='/login/',
+    LOGIN_REDIRECT_URL='/',
+)
+@override_script_prefix('/')
 class AuthenticationTests(TestCase):
     def setUp(self):
         self.username = 'barista'

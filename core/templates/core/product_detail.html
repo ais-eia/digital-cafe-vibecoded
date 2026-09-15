@@ -1,11 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>{{ product.name }} | Digital Cafe</title>
-</head>
-<body>
-    <main>
+{% extends 'core/base.html' %}
+
+{% block title %}{{ product.name }} | Digital Cafe{% endblock %}
+
+{% block content %}
         <p><a href="{% url 'home' %}">Back to coffee menu</a></p>
         <h1>{{ product.name }}</h1>
         <p>Price: ${{ product.price|floatformat:2 }}</p>
@@ -17,6 +14,4 @@
             {{ form.quantity.errors }}
             <button type="submit">Add to cart</button>
         </form>
-    </main>
-</body>
-</html>
+{% endblock %}
