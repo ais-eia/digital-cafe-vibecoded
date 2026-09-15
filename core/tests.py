@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib import admin
 from django.core.exceptions import ValidationError
 from django.db.models import ProtectedError
 from django.test import TestCase, override_settings
@@ -11,6 +12,176 @@ from django.urls import NoReverseMatch, get_script_prefix, reverse
 
 from .models import CartItem, Product, Transaction, TransactionLineItem
 from .utils import redirect_without_script_prefix
+
+
+class ProductAdminTests(TestCase):
+    def setUp(self):
+        self.staff = get_user_model().objects.create_superuser(
+            username='admin-user',
+            password='admin-password',
+        )
+        self.user = get_user_model().objects.create_user(username='regular-user')
+        self.product = Product.objects.create(name='House Blend', price=Decimal('3.50'))
+
+    def test_product_is_registered_with_expected_admin_configuration(self):
+        product_admin = admin.site._registry[Product]
+
+        self.assertEqual(product_admin.list_display, ('name', 'price'))
+        self.assertEqual(product_admin.search_fields, ('name',))
+
+    def test_staff_user_can_access_product_admin(self):
+        self.client.force_login(self.staff)
+
+        response = self.client.get('/admin/core/product/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'House Blend')
+
+    def test_non_staff_user_is_denied_product_admin(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get('/admin/core/product/')
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/admin/login/', response['Location'])
+
+    def test_anonymous_user_is_redirected_to_admin_login(self):
+        response = self.client.get('/admin/core/product/')
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/admin/login/', response['Location'])
+
+    def test_staff_can_create_product(self):
+        self.client.force_login(self.staff)
+
+        response = self.client.post(
+            '/admin/core/product/add/',
+            {'name': 'Cappuccino', 'price': '4.75', '_save': 'Save'},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(Product.objects.filter(name='Cappuccino', price=Decimal('4.75')).exists())
+
+    def test_staff_can_edit_product(self):
+        self.client.force_login(self.staff)
+
+        response = self.client.post(
+            f'/admin/core/product/{self.product.pk}/change/',
+            {'name': 'Renamed Coffee', 'price': '9.99', '_save': 'Save'},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.name, 'Renamed Coffee')
+        self.assertEqual(self.product.price, Decimal('9.99'))
+
+    def test_invalid_admin_price_is_rejected(self):
+        self.client.force_login(self.staff)
+
+        response = self.client.post(
+            f'/admin/core/product/{self.product.pk}/change/',
+            {'name': 'House Blend', 'price': '-1.00', '_save': 'Save'},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.price, Decimal('3.50'))
+        self.assertContains(response, 'Ensure this value is greater than or equal to 0.')
+
+    def test_product_search_finds_matching_name(self):
+        Product.objects.create(name='Cappuccino', price=Decimal('4.75'))
+        self.client.force_login(self.staff)
+
+        response = self.client.get('/admin/core/product/', {'q': 'Cappuccino'})
+
+        self.assertContains(response, 'Cappuccino')
+        self.assertNotContains(response, 'House Blend')
+
+    def test_staff_can_delete_unprotected_product(self):
+        self.client.force_login(self.staff)
+
+        response = self.client.post(
+            f'/admin/core/product/{self.product.pk}/delete/',
+            {'post': 'yes'},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(Product.objects.filter(pk=self.product.pk).exists())
+
+    def test_protected_delete_shows_clear_error_and_preserves_product(self):
+        CartItem.objects.create(user=self.user, product=self.product, quantity=1)
+        self.client.force_login(self.staff)
+
+        confirmation = self.client.get(f'/admin/core/product/{self.product.pk}/delete/')
+
+        self.assertEqual(confirmation.status_code, 200)
+        self.assertContains(confirmation, 'Cannot delete product')
+        self.assertContains(confirmation, 'Cart item:')
+
+        response = self.client.post(
+            f'/admin/core/product/{self.product.pk}/delete/',
+            {'post': 'yes'},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Cannot delete product')
+        self.assertTrue(Product.objects.filter(pk=self.product.pk).exists())
+
+    def test_admin_edit_does_not_change_transaction_snapshot(self):
+        purchase = Transaction.objects.create(user=self.user, total=Decimal('3.50'))
+        TransactionLineItem.objects.create(
+            transaction=purchase,
+            product=self.product,
+            product_name='House Blend',
+            unit_price=Decimal('3.50'),
+            quantity=1,
+        )
+        self.client.force_login(self.staff)
+
+        self.client.post(
+            f'/admin/core/product/{self.product.pk}/change/',
+            {'name': 'Renamed Coffee', 'price': '9.99', '_save': 'Save'},
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.get('/transactions/')
+        self.assertContains(response, 'House Blend')
+        self.assertContains(response, '$3.50')
+        self.assertNotContains(response, 'Renamed Coffee')
+        self.assertNotContains(response, '$9.99')
+
+    def test_admin_delete_nulls_transaction_product_and_preserves_snapshot(self):
+        purchase = Transaction.objects.create(user=self.user, total=Decimal('3.50'))
+        line_item = TransactionLineItem.objects.create(
+            transaction=purchase,
+            product=self.product,
+            product_name='House Blend',
+            unit_price=Decimal('3.50'),
+            quantity=1,
+        )
+        self.client.force_login(self.staff)
+
+        response = self.client.post(
+            f'/admin/core/product/{self.product.pk}/delete/',
+            {'post': 'yes'},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        line_item.refresh_from_db()
+        self.assertIsNone(line_item.product)
+        self.assertEqual(line_item.product_name, 'House Blend')
+        self.assertEqual(line_item.unit_price, Decimal('3.50'))
+
+    def test_public_catalog_shows_admin_created_product(self):
+        self.client.force_login(self.staff)
+        self.client.post(
+            '/admin/core/product/add/',
+            {'name': 'Admin Coffee', 'price': '5.25', '_save': 'Save'},
+        )
+
+        response = self.client.get('/')
+
+        self.assertContains(response, 'Admin Coffee')
 
 
 @override_settings(
