@@ -1,13 +1,15 @@
 from decimal import Decimal
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db.models import ProtectedError
 from django.test import TestCase, override_settings
 from django.test.utils import override_script_prefix
-from django.urls import reverse
+from django.urls import NoReverseMatch, get_script_prefix, reverse
 
 from .models import CartItem, Product
+from .utils import redirect_without_script_prefix
 
 
 @override_settings(
@@ -190,7 +192,7 @@ class ShoppingCartTests(TestCase):
             {'quantity': 3},
         )
 
-        self.assertRedirects(response, reverse('cart'))
+        self.assertRedirects(response, '/cart/')
         item = CartItem.objects.get(user=self.user, product=self.product)
         self.assertEqual(item.quantity, 3)
 
@@ -202,7 +204,7 @@ class ShoppingCartTests(TestCase):
             {'quantity': 3},
         )
 
-        self.assertRedirects(response, reverse('cart'))
+        self.assertRedirects(response, '/cart/')
         self.assertEqual(CartItem.objects.get(user=self.user, product=self.product).quantity, 7)
         self.assertEqual(CartItem.objects.filter(user=self.user, product=self.product).count(), 1)
 
@@ -314,3 +316,28 @@ class ProxyPrefixTests(TestCase):
         self.assertEqual(reverse('home'), '/')
         self.assertEqual(reverse('login'), '/login/')
         self.assertEqual(reverse('product-detail', args=[2]), '/products/2/')
+
+    @override_settings(FORCE_SCRIPT_NAME='/proxy/8000')
+    @override_script_prefix('/proxy/8000')
+    def test_redirect_helper_omits_prefix_and_restores_it(self):
+        response = redirect_without_script_prefix('cart')
+
+        self.assertEqual(response['Location'], '/cart/')
+        self.assertEqual(get_script_prefix(), '/proxy/8000/')
+
+    @override_settings(FORCE_SCRIPT_NAME='/proxy/8000')
+    @override_script_prefix('/proxy/8000')
+    def test_redirect_helper_restores_prefix_after_reverse_failure(self):
+        with self.assertRaises(NoReverseMatch):
+            redirect_without_script_prefix('missing-route')
+
+        self.assertEqual(get_script_prefix(), '/proxy/8000/')
+
+    @override_settings(
+        FORCE_SCRIPT_NAME='/proxy/8000',
+        LOGIN_URL='/login/',
+        LOGIN_REDIRECT_URL='/',
+    )
+    def test_authentication_redirect_targets_are_unprefixed(self):
+        self.assertEqual(settings.LOGIN_URL, '/login/')
+        self.assertEqual(settings.LOGIN_REDIRECT_URL, '/')

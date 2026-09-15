@@ -1,10 +1,11 @@
 from django.db import transaction
 from django.db.models import F
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import get_object_or_404, render
 
 from .forms import AddToCartForm
 from .models import CartItem, Product
+from .utils import redirect_without_script_prefix
 
 
 @login_required
@@ -39,7 +40,7 @@ def product_detail(request, pk):
                 cart_item.quantity = F('quantity') + quantity
                 cart_item.save(update_fields=['quantity'])
                 cart_item.refresh_from_db()
-        return redirect('cart')
+        return redirect_without_script_prefix('cart')
     return render(request, 'core/product_detail.html', {'product': product, 'form': form})
 
 

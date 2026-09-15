@@ -34,8 +34,8 @@ if DJANGO_SCRIPT_NAME and not DJANGO_SCRIPT_NAME.startswith('/'):
     raise ValueError('DJANGO_SCRIPT_NAME must be empty or start with /.')
 FORCE_SCRIPT_NAME = DJANGO_SCRIPT_NAME.rstrip('/') or ''
 
-LOGIN_URL = f'{FORCE_SCRIPT_NAME}/login/' if FORCE_SCRIPT_NAME else '/login/'
-LOGIN_REDIRECT_URL = f'{FORCE_SCRIPT_NAME}/' if FORCE_SCRIPT_NAME else '/'
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/'
 
 
 # Application definition
