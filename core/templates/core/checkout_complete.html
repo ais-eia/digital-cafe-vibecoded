@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Purchase complete | Digital Cafe</title>
+</head>
+<body>
+    <main>
+        <h1>Purchase complete</h1>
+        <p>Transaction #{{ purchase.pk }} was recorded.</p>
+        <p>Total: ${{ purchase.total|floatformat:2 }}</p>
+        <p><a href="{% url 'home' %}">Back to coffee menu</a></p>
+    </main>
+</body>
+</html>

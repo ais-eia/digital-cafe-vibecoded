@@ -44,3 +44,53 @@ class CartItem(models.Model):
     @property
     def line_total(self):
         return self.product.price * self.quantity
+
+
+class Transaction(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    total = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0'))],
+    )
+
+    class Meta:
+        ordering = ['-created_at', '-pk']
+
+
+class TransactionLineItem(models.Model):
+    transaction = models.ForeignKey(
+        Transaction,
+        on_delete=models.CASCADE,
+        related_name='line_items',
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='transaction_line_items',
+    )
+    product_name = models.CharField(max_length=100)
+    unit_price = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0'))],
+    )
+    quantity = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(99)],
+    )
+
+    class Meta:
+        ordering = ['pk']
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(quantity__gte=1) & Q(quantity__lte=99),
+                name='transaction_line_item_quantity_1_to_99',
+            ),
+        ]
+
+    @property
+    def line_total(self):
+        return self.unit_price * self.quantity

@@ -8,6 +8,7 @@
     <main>
         <p><a href="{% url 'home' %}">Back to coffee menu</a></p>
         <h1>Your cart</h1>
+        <p><a href="{% url 'checkout' %}">Go to checkout</a></p>
         {% if cart_items %}
             <table>
                 <thead>
