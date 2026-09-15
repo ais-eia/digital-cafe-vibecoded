@@ -1,0 +1,26 @@
+[
+  {
+    "model": "core.product",
+    "pk": 1,
+    "fields": {
+      "name": "House Blend",
+      "price": "3.50"
+    }
+  },
+  {
+    "model": "core.product",
+    "pk": 2,
+    "fields": {
+      "name": "Cappuccino",
+      "price": "4.75"
+    }
+  },
+  {
+    "model": "core.product",
+    "pk": 3,
+    "fields": {
+      "name": "Cold Brew",
+      "price": "4.25"
+    }
+  }
+]
