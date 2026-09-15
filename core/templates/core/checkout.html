@@ -1,11 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>Checkout | Digital Cafe</title>
-</head>
-<body>
-    <main>
+{% extends 'core/base.html' %}
+
+{% block title %}Checkout | Digital Cafe{% endblock %}
+
+{% block content %}
         <p><a href="{% url 'cart' %}">Back to cart</a></p>
         <h1>Checkout</h1>
         {% if checkout_rows %}
@@ -53,6 +50,4 @@
         {% else %}
             <p>Your checkout is empty.</p>
         {% endif %}
-    </main>
-</body>
-</html>
+{% endblock %}

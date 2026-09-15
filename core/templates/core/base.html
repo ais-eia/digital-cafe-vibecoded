@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>{% block title %}Digital Cafe{% endblock %}</title>
+</head>
+<body>
+    <header data-auth-navigation>
+        <nav aria-label="Main navigation">
+            <a href="{% url 'home' %}">Digital Cafe</a>
+            <a href="{% url 'home' %}">Menu</a>
+            <a href="{% url 'cart' %}">Cart</a>
+            <a href="{% url 'checkout' %}">Checkout</a>
+            <a href="{% url 'transaction-history' %}">Transaction history</a>
+            <span>Signed in as {{ request.user.username }}</span>
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit">Log out</button>
+            </form>
+        </nav>
+    </header>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>
