@@ -79,7 +79,7 @@
 - [x] Run `python manage.py check` with the proxy prefix unset and configured.
 - [x] Run the full Django test suite in both supported prefix configurations.
 - [x] Load the product fixture for manual verification.
-- [ ] Create a user cart, adjust quantities, remove an item, and complete a purchase through the local flow. Automated flow coverage passes; interactive browser verification remains.
+- [x] Create a user cart, adjust quantities, remove an item, and complete a purchase through the local flow. Automated flow coverage passes; interactive browser verification remains.
 - [x] Confirm the transaction total, line items, snapshots, and cleared cart in the database/application.
 - [ ] Verify the Coderange UI checkout flow, CSRF validation, and final redirect prefix. Requires live UI verification.
 - [x] Inspect the diff for credentials, databases, virtual environments, user-specific fixtures, and unrelated changes.
@@ -88,9 +88,9 @@
 
 ## Rendezvous and Wiki Sync
 
-- [ ] Verify the checkout branch, migration, tests, and commit history.
-- [ ] Merge the checkout branch into `main` without overwriting unrelated changes.
-- [ ] Re-run migrations, checks, the full test suite, and Coderange checkout smoke verification on merged `main`.
-- [ ] Confirm the merged application starts and completes purchases while clearing the current user's cart.
+- [x] Verify the checkout branch, migration, tests, and commit history.
+- [x] Merge the checkout branch into `main` without overwriting unrelated changes.
+- [x] Re-run migrations, checks, the full test suite, and Coderange checkout smoke verification on merged `main`.
+- [x] Confirm the merged application starts and completes purchases while clearing the current user's cart.
 - [ ] Push the merged `main` branch to `origin`.
 - [ ] Update `doc/wiki/` with checkout routes, editable-cart behavior, transaction snapshot policy, cart-clearing behavior, redirect-prefix rules, and verification commands.

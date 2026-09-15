@@ -6,7 +6,7 @@ The repository contains the Django application for Digital Cafe. The Django proj
 
 User authentication is implemented with Django's built-in `User` model and native username/password authentication. The application root is protected and displays a greeting plus the product catalog for the logged-in user. Product cart, checkout, transaction history, and product administration features are not implemented yet.
 
-Authentication, product browsing, shopping cart, and redirect-prefix handling are merged into `main`. Django's system check passes and 32 tests pass in both direct-root and Coderange-prefix configurations. With the default Coderange configuration, generated HTML links remain under `/proxy/8000/`, while redirect responses use unprefixed Django paths for Coderange to prefix exactly once.
+Authentication, product browsing, shopping cart, checkout, and redirect-prefix handling are merged into `main`. Django's system check passes and 44 tests pass in both direct-root and Coderange-prefix configurations. With the default Coderange configuration, generated HTML links remain under `/proxy/8000/`, while redirect responses use unprefixed Django paths for Coderange to prefix exactly once.
 
 ## Authentication
 
@@ -25,6 +25,16 @@ Authentication, product browsing, shopping cart, and redirect-prefix handling ar
 - Cart rows are persisted in SQLite through the `CartItem` model and isolated by authenticated user.
 - Product deletion is protected while a cart row references the product.
 - Checkout, cart update/remove controls, purchases, and transaction history are not implemented yet.
+
+## Checkout
+
+- `/checkout/` displays the current user's cart with editable quantities, line totals, remove actions, and an order total.
+- Quantities remain constrained to 1 through 99.
+- Completing checkout creates a `Transaction` and `TransactionLineItem` records atomically, then clears only the current user's cart.
+- Transaction line items snapshot product name and unit price at purchase time.
+- Historical line items retain their snapshots if the product is later renamed, repriced, or deleted; the nullable product reference uses `SET_NULL`.
+- `/checkout/complete/<id>/` displays a purchase confirmation and is restricted to the transaction owner.
+- Checkout does not process payments and transaction history UI is not implemented yet.
 
 Application-generated named redirects should use `core.utils.redirect_without_script_prefix()` rather than Django's plain `redirect()` while the Coderange prefix configuration is active. This keeps redirect headers unprefixed for the proxy while preserving `FORCE_SCRIPT_NAME` for normal template URL generation.
 
