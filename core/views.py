@@ -126,3 +126,16 @@ def checkout(request):
 def checkout_complete(request, transaction_id):
     purchase = get_object_or_404(Transaction, pk=transaction_id, user=request.user)
     return render(request, 'core/checkout_complete.html', {'purchase': purchase})
+
+
+@login_required
+def transaction_history(request):
+    transactions = (
+        Transaction.objects.filter(user=request.user)
+        .prefetch_related('line_items')
+    )
+    return render(
+        request,
+        'core/transaction_history.html',
+        {'transactions': transactions},
+    )

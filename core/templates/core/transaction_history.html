@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Transaction history | Digital Cafe</title>
+</head>
+<body>
+    <main>
+        <p><a href="{% url 'home' %}">Back to coffee menu</a></p>
+        <h1>Transaction history</h1>
+        {% if transactions %}
+            {% for transaction in transactions %}
+                <section>
+                    <h2>Transaction #{{ transaction.pk }}</h2>
+                    <p>Purchased: {{ transaction.created_at }}</p>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th scope="col">Product</th>
+                                <th scope="col">Unit price</th>
+                                <th scope="col">Quantity</th>
+                                <th scope="col">Line total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in transaction.line_items.all %}
+                                <tr>
+                                    <td>{{ item.product_name }}</td>
+                                    <td>${{ item.unit_price|floatformat:2 }}</td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td>${{ item.line_total|floatformat:2 }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    <p>Total: ${{ transaction.total|floatformat:2 }}</p>
+                </section>
+            {% endfor %}
+        {% else %}
+            <p>No purchases yet.</p>
+        {% endif %}
+    </main>
+</body>
+</html>

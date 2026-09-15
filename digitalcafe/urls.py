@@ -32,4 +32,5 @@ urlpatterns = [
         views.checkout_complete,
         name='checkout-complete',
     ),
+    path('transactions/', views.transaction_history, name='transaction-history'),
 ]

@@ -488,3 +488,89 @@ class CheckoutTests(TestCase):
         response = self.client.get(reverse('checkout'))
 
         self.assertRedirects(response, f'/login/?next=/checkout/')
+
+
+@override_settings(
+    FORCE_SCRIPT_NAME='',
+    LOGIN_URL='/login/',
+    LOGIN_REDIRECT_URL='/',
+)
+@override_script_prefix('/')
+class TransactionHistoryTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(username='history-user')
+        self.other_user = get_user_model().objects.create_user(username='other-history-user')
+        self.product = Product.objects.create(name='House Blend', price=Decimal('3.50'))
+        self.client.force_login(self.user)
+
+    def create_transaction(self, user=None, product_name='House Blend', unit_price='3.50'):
+        purchase = Transaction.objects.create(
+            user=user or self.user,
+            total=Decimal(unit_price) * 2,
+        )
+        TransactionLineItem.objects.create(
+            transaction=purchase,
+            product=self.product,
+            product_name=product_name,
+            unit_price=Decimal(unit_price),
+            quantity=2,
+        )
+        return purchase
+
+    def test_empty_history_displays_message(self):
+        response = self.client.get(reverse('transaction-history'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'No purchases yet.')
+
+    def test_history_displays_current_users_transactions_newest_first(self):
+        older = self.create_transaction(product_name='Older Coffee')
+        newer = self.create_transaction(product_name='Newer Coffee')
+        Transaction.objects.filter(pk=older.pk).update(created_at='2020-01-01T00:00:00Z')
+        Transaction.objects.filter(pk=newer.pk).update(created_at='2024-01-01T00:00:00Z')
+        self.create_transaction(user=self.other_user, product_name='Other User Coffee')
+
+        response = self.client.get(reverse('transaction-history'))
+
+        self.assertContains(response, 'Older Coffee')
+        self.assertContains(response, 'Newer Coffee')
+        self.assertNotContains(response, 'Other User Coffee')
+        self.assertLess(
+            response.content.index(b'Newer Coffee'),
+            response.content.index(b'Older Coffee'),
+        )
+
+    def test_history_renders_original_snapshots_after_product_changes(self):
+        self.create_transaction()
+        self.product.name = 'Renamed Coffee'
+        self.product.price = Decimal('9.99')
+        self.product.save()
+
+        response = self.client.get(reverse('transaction-history'))
+
+        self.assertContains(response, 'House Blend')
+        self.assertContains(response, '$3.50')
+        self.assertNotContains(response, 'Renamed Coffee')
+        self.assertNotContains(response, '$9.99')
+
+    def test_history_renders_original_snapshots_after_product_deletion(self):
+        self.create_transaction()
+        self.product.delete()
+
+        response = self.client.get(reverse('transaction-history'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'House Blend')
+        self.assertContains(response, '$3.50')
+
+    def test_history_link_is_prefix_aware(self):
+        response = self.client.get(reverse('transaction-history'))
+
+        self.assertContains(response, f'href="{reverse("home")}"')
+
+    def test_anonymous_user_is_redirected_from_history(self):
+        self.client.logout()
+
+        response = self.client.get(reverse('transaction-history'))
+
+        self.assertRedirects(response, '/login/?next=/transactions/')
