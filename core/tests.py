@@ -1,12 +1,15 @@
 from decimal import Decimal
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.db.models import ProtectedError
 from django.test import TestCase, override_settings
 from django.test.utils import override_script_prefix
-from django.urls import reverse
+from django.urls import NoReverseMatch, get_script_prefix, reverse
 
-from .models import Product
+from .models import CartItem, Product
+from .utils import redirect_without_script_prefix
 
 
 @override_settings(
@@ -163,6 +166,139 @@ class ProductBrowsingTests(TestCase):
         )
 
 
+@override_settings(
+    FORCE_SCRIPT_NAME='',
+    LOGIN_URL='/login/',
+    LOGIN_REDIRECT_URL='/',
+)
+@override_script_prefix('/')
+class ShoppingCartTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(username='customer')
+        self.other_user = get_user_model().objects.create_user(username='other')
+        self.product = Product.objects.create(name='House Blend', price=Decimal('3.50'))
+        self.client.force_login(self.user)
+
+    def test_product_detail_renders_quantity_form_and_csrf_token(self):
+        response = self.client.get(reverse('product-detail', args=[self.product.pk]))
+
+        self.assertContains(response, f'action="{reverse("product-detail", args=[self.product.pk])}"')
+        self.assertContains(response, 'name="quantity"')
+        self.assertContains(response, 'name="csrfmiddlewaretoken"')
+
+    def test_valid_add_creates_cart_item_and_redirects_to_cart(self):
+        response = self.client.post(
+            reverse('product-detail', args=[self.product.pk]),
+            {'quantity': 3},
+        )
+
+        self.assertRedirects(response, '/cart/')
+        item = CartItem.objects.get(user=self.user, product=self.product)
+        self.assertEqual(item.quantity, 3)
+
+    def test_repeated_add_increments_existing_cart_item(self):
+        CartItem.objects.create(user=self.user, product=self.product, quantity=4)
+
+        response = self.client.post(
+            reverse('product-detail', args=[self.product.pk]),
+            {'quantity': 3},
+        )
+
+        self.assertRedirects(response, '/cart/')
+        self.assertEqual(CartItem.objects.get(user=self.user, product=self.product).quantity, 7)
+        self.assertEqual(CartItem.objects.filter(user=self.user, product=self.product).count(), 1)
+
+    def test_add_over_maximum_does_not_change_existing_quantity(self):
+        CartItem.objects.create(user=self.user, product=self.product, quantity=98)
+
+        response = self.client.post(
+            reverse('product-detail', args=[self.product.pk]),
+            {'quantity': 2},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'cannot exceed 99')
+        self.assertEqual(CartItem.objects.get(user=self.user, product=self.product).quantity, 98)
+
+    def test_invalid_quantities_do_not_create_cart_items(self):
+        for quantity in ('', '0', '-1', '1.5', '100', 'not-a-number'):
+            with self.subTest(quantity=quantity):
+                response = self.client.post(
+                    reverse('product-detail', args=[self.product.pk]),
+                    {'quantity': quantity},
+                )
+
+                self.assertEqual(response.status_code, 200)
+                self.assertFalse(CartItem.objects.filter(user=self.user).exists())
+
+    def test_get_does_not_mutate_cart(self):
+        response = self.client.get(reverse('product-detail', args=[self.product.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(CartItem.objects.filter(user=self.user).exists())
+
+    def test_cart_displays_current_users_items_and_line_total(self):
+        CartItem.objects.create(user=self.user, product=self.product, quantity=3)
+        CartItem.objects.create(
+            user=self.other_user,
+            product=self.product,
+            quantity=7,
+        )
+
+        response = self.client.get(reverse('cart'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'House Blend')
+        self.assertContains(response, '$3.50')
+        self.assertContains(response, '$10.50')
+        self.assertContains(response, '>3<')
+        self.assertNotContains(response, '>7<')
+
+    def test_empty_cart_displays_message(self):
+        response = self.client.get(reverse('cart'))
+
+        self.assertContains(response, 'Your cart is empty.')
+
+    def test_user_cannot_see_or_mutate_other_users_cart(self):
+        CartItem.objects.create(user=self.other_user, product=self.product, quantity=5)
+
+        response = self.client.get(reverse('cart'))
+
+        self.assertContains(response, 'Your cart is empty.')
+        self.assertNotContains(response, '>5<')
+        self.assertEqual(CartItem.objects.filter(user=self.user).count(), 0)
+
+    def test_get_add_route_does_not_mutate_cart(self):
+        response = self.client.get(reverse('product-detail', args=[self.product.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(CartItem.objects.filter(user=self.user).exists())
+
+    def test_product_cannot_be_deleted_while_in_a_cart(self):
+        CartItem.objects.create(user=self.user, product=self.product, quantity=1)
+
+        with self.assertRaises(ProtectedError):
+            self.product.delete()
+
+    def test_anonymous_user_is_redirected_from_cart_and_add(self):
+        self.client.logout()
+
+        cart_response = self.client.get(reverse('cart'))
+        add_response = self.client.post(
+            reverse('product-detail', args=[self.product.pk]),
+            {'quantity': 1},
+        )
+
+        self.assertRedirects(
+            cart_response,
+            f'{reverse("login")}?next={reverse("cart")}',
+        )
+        self.assertRedirects(
+            add_response,
+            f'{reverse("login")}?next={reverse("product-detail", args=[self.product.pk])}',
+        )
+
+
 class ProxyPrefixTests(TestCase):
     @override_settings(
         FORCE_SCRIPT_NAME='/proxy/8000',
@@ -180,3 +316,28 @@ class ProxyPrefixTests(TestCase):
         self.assertEqual(reverse('home'), '/')
         self.assertEqual(reverse('login'), '/login/')
         self.assertEqual(reverse('product-detail', args=[2]), '/products/2/')
+
+    @override_settings(FORCE_SCRIPT_NAME='/proxy/8000')
+    @override_script_prefix('/proxy/8000')
+    def test_redirect_helper_omits_prefix_and_restores_it(self):
+        response = redirect_without_script_prefix('cart')
+
+        self.assertEqual(response['Location'], '/cart/')
+        self.assertEqual(get_script_prefix(), '/proxy/8000/')
+
+    @override_settings(FORCE_SCRIPT_NAME='/proxy/8000')
+    @override_script_prefix('/proxy/8000')
+    def test_redirect_helper_restores_prefix_after_reverse_failure(self):
+        with self.assertRaises(NoReverseMatch):
+            redirect_without_script_prefix('missing-route')
+
+        self.assertEqual(get_script_prefix(), '/proxy/8000/')
+
+    @override_settings(
+        FORCE_SCRIPT_NAME='/proxy/8000',
+        LOGIN_URL='/login/',
+        LOGIN_REDIRECT_URL='/',
+    )
+    def test_authentication_redirect_targets_are_unprefixed(self):
+        self.assertEqual(settings.LOGIN_URL, '/login/')
+        self.assertEqual(settings.LOGIN_REDIRECT_URL, '/')
