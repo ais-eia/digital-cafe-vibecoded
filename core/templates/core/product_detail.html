@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>{{ product.name }} | Digital Cafe</title>
+</head>
+<body>
+    <main>
+        <p><a href="{% url 'home' %}">Back to coffee menu</a></p>
+        <h1>{{ product.name }}</h1>
+        <p>Price: ${{ product.price|floatformat:2 }}</p>
+    </main>
+</body>
+</html>

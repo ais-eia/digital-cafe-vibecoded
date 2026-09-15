@@ -8,6 +8,27 @@
     <main>
         <h1>Digital Cafe</h1>
         <p>Welcome, {{ request.user.username }}!</p>
+        <h2>Coffee Menu</h2>
+        {% if products %}
+            <table>
+                <thead>
+                    <tr>
+                        <th scope="col">Product</th>
+                        <th scope="col">Price</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                        <tr>
+                            <td><a href="{% url 'product-detail' product.pk %}">{{ product.name }}</a></td>
+                            <td>${{ product.price|floatformat:2 }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No coffee products are available yet.</p>
+        {% endif %}
     </main>
 </body>
 </html>

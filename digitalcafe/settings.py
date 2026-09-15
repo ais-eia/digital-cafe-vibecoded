@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -28,8 +29,13 @@ DEBUG = True
 ALLOWED_HOSTS = ['itent-45-1t-2526-p21.coderange.net', 'localhost', '127.0.0.1']
 CSRF_TRUSTED_ORIGINS = ['https://itent-45-1t-2526-p21.coderange.net']
 
-LOGIN_URL = '/login/'
-LOGIN_REDIRECT_URL = '/'
+DJANGO_SCRIPT_NAME = os.environ.get('DJANGO_SCRIPT_NAME', '/proxy/8000')
+if DJANGO_SCRIPT_NAME and not DJANGO_SCRIPT_NAME.startswith('/'):
+    raise ValueError('DJANGO_SCRIPT_NAME must be empty or start with /.')
+FORCE_SCRIPT_NAME = DJANGO_SCRIPT_NAME.rstrip('/') or ''
+
+LOGIN_URL = f'{FORCE_SCRIPT_NAME}/login/' if FORCE_SCRIPT_NAME else '/login/'
+LOGIN_REDIRECT_URL = f'{FORCE_SCRIPT_NAME}/' if FORCE_SCRIPT_NAME else '/'
 
 
 # Application definition
