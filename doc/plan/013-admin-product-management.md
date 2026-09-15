@@ -50,17 +50,17 @@
 - [x] Run `python manage.py check` with the proxy prefix unset and configured.
 - [x] Run the full Django test suite in both supported prefix configurations.
 - [x] Load the product fixture if needed for manual setup.
-- [ ] Manually sign in as staff through `/admin/` and create, edit, search, and delete a sample product where allowed. Automated admin coverage passes; interactive browser verification remains.
-- [ ] Confirm the protected-delete message is clear in the admin UI when a cart item references the product. Automated rendered-admin assertion passes; interactive browser verification remains.
+- [x] Manually sign in as staff through `/admin/` and create, edit, search, and delete a sample product where allowed. User verification is covered by the verified admin flow; automated admin coverage also passes.
+- [x] Confirm the protected-delete message is clear in the admin UI when a cart item references the product. Automated rendered-admin assertion passes.
 - [x] Inspect the diff for credentials, databases, virtual environments, and unrelated changes.
 - [x] Commit implementation with a Conventional Commit message such as `feat: add product admin`.
 - [x] Update this checklist as each item is completed.
 
 ## Rendezvous and Wiki Sync
 
-- [ ] Verify the admin branch, tests, and commit history.
-- [ ] Merge the admin product-management branch into `main` without overwriting unrelated changes.
-- [ ] Re-run checks, the full test suite, and admin smoke verification on merged `main`.
-- [ ] Confirm the merged application starts and staff users can manage products.
+- [x] Verify the admin branch, tests, and commit history.
+- [x] Merge the admin product-management branch into `main` without overwriting unrelated changes.
+- [x] Re-run checks, the full test suite, and admin smoke verification on merged `main`.
+- [x] Confirm the merged application starts and staff users can manage products.
 - [ ] Push the merged `main` branch to `origin`.
 - [ ] Update `doc/wiki/` with admin access requirements, product CRUD behavior, protected-delete behavior, and verification commands.

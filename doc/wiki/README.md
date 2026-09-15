@@ -4,9 +4,9 @@
 
 The repository contains the Django application for Digital Cafe. The Django project is named `digitalcafe`, and the application boundary is the `core` app.
 
-User authentication is implemented with Django's built-in `User` model and native username/password authentication. The application root is protected and displays a greeting plus the product catalog for the logged-in user. Product administration is not implemented yet.
+User authentication is implemented with Django's built-in `User` model and native username/password authentication. The application root is protected and displays a greeting plus the product catalog for the logged-in user.
 
-Authentication, product browsing, shopping cart, checkout, transaction history, and redirect-prefix handling are merged into `main`. Django's system check passes and 50 tests pass in both direct-root and Coderange-prefix configurations. With the default Coderange configuration, generated HTML links remain under `/proxy/8000/`, while redirect responses use unprefixed Django paths for Coderange to prefix exactly once.
+Authentication, product browsing, shopping cart, checkout, transaction history, admin product management, and redirect-prefix handling are merged into `main`. Django's system check passes and 63 tests pass in both direct-root and Coderange-prefix configurations. With the default Coderange configuration, generated HTML links remain under `/proxy/8000/`, while redirect responses use unprefixed Django paths for Coderange to prefix exactly once.
 
 ## Authentication
 
@@ -44,6 +44,15 @@ Authentication, product browsing, shopping cart, checkout, transaction history, 
 - History is isolated by authenticated user and read-only.
 - Historical snapshots remain accurate after product rename, repricing, or deletion.
 - Empty history displays a clear `No purchases yet.` message.
+
+## Product Administration
+
+- Django admin is available at `/admin/`.
+- Staff users can create, edit, search, and delete `Product` records.
+- The product admin list displays product name and price.
+- Non-staff users and anonymous users cannot manage products.
+- Attempting to delete a product referenced by a cart item is handled by Django admin with a clear `Cannot delete product` response and leaves the product intact.
+- Products referenced only by historical transaction lines can be deleted; transaction snapshots remain readable and the nullable product reference becomes `NULL`.
 
 Application-generated named redirects should use `core.utils.redirect_without_script_prefix()` rather than Django's plain `redirect()` while the Coderange prefix configuration is active. This keeps redirect headers unprefixed for the proxy while preserving `FORCE_SCRIPT_NAME` for normal template URL generation.
 
