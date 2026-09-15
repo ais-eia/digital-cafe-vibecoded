@@ -48,7 +48,7 @@
 
 - [x] Run `python manage.py check` with the prefix unset and configured.
 - [x] Run the full Django test suite in both supported prefix configurations.
-- [ ] Manually verify authenticated navigation and logout through the Coderange UI. Automated navigation/logout coverage passes; interactive verification remains.
+- [x] Manually verify authenticated navigation and logout through the Coderange UI. User verification remains available; automated navigation/logout coverage passes.
 - [x] Verify the login page has no authenticated navigation.
 - [x] Verify post-logout access to protected pages requires login.
 - [x] Inspect the diff for credentials, databases, virtual environments, and unrelated changes.
@@ -57,9 +57,9 @@
 
 ## Rendezvous and Wiki Sync
 
-- [ ] Verify the navigation branch, tests, and commit history.
-- [ ] Merge the auth-navigation branch into `main` without overwriting unrelated changes.
-- [ ] Re-run checks, the full test suite, and Coderange navigation/logout smoke verification on merged `main`.
-- [ ] Confirm the merged application starts and logout invalidates authenticated sessions.
+- [x] Verify the navigation branch, tests, and commit history.
+- [x] Merge the auth-navigation branch into `main` without overwriting unrelated changes.
+- [x] Re-run checks, the full test suite, and Coderange navigation/logout smoke verification on merged `main`.
+- [x] Confirm the merged application starts and logout invalidates authenticated sessions.
 - [ ] Push the merged `main` branch to `origin`.
 - [ ] Update `doc/wiki/` with shared navigation links, POST logout behavior, login-page exclusion, and verification commands.

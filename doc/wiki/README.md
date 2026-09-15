@@ -6,7 +6,7 @@ The repository contains the Django application for Digital Cafe. The Django proj
 
 User authentication is implemented with Django's built-in `User` model and native username/password authentication. The application root is protected and displays a greeting plus the product catalog for the logged-in user.
 
-Authentication, product browsing, shopping cart, checkout, transaction history, admin product management, and redirect-prefix handling are merged into `main`. Django's system check passes and 63 tests pass in both direct-root and Coderange-prefix configurations. With the default Coderange configuration, generated HTML links remain under `/proxy/8000/`, while redirect responses use unprefixed Django paths for Coderange to prefix exactly once.
+Authentication, product browsing, shopping cart, checkout, transaction history, admin product management, auth navigation, and redirect-prefix handling are merged into `main`. Django's system check passes and 69 tests pass in both direct-root and Coderange-prefix configurations. With the default Coderange configuration, generated HTML links remain under `/proxy/8000/`, while redirect responses use unprefixed Django paths for Coderange to prefix exactly once.
 
 ## Authentication
 
@@ -16,6 +16,14 @@ Authentication, product browsing, shopping cart, checkout, transaction history, 
 - `/` requires authentication and greets the user by username.
 - The coderange forwarding origin is trusted for Django CSRF protection during development.
 - Application redirects use unprefixed paths because Coderange automatically prefixes redirect `Location` headers.
+
+## Auth Navigation
+
+- Authenticated public pages share a navigation bar with links to menu, cart, checkout, and transaction history.
+- The navigation displays the signed-in username.
+- Logout is a CSRF-protected POST form using Django's built-in `LogoutView`.
+- Logout redirects to the login page and invalidates the session.
+- The login page remains standalone and does not display authenticated navigation.
 
 ## Shopping Cart
 
