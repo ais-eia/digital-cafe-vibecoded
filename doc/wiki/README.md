@@ -6,7 +6,7 @@ The repository contains the Django application for Digital Cafe. The Django proj
 
 User authentication is implemented with Django's built-in `User` model and native username/password authentication. The application root is protected and displays a greeting plus the product catalog for the logged-in user. Product cart, checkout, transaction history, and product administration features are not implemented yet.
 
-The authentication and product browsing features are merged into `main`. Django's system check passes and 17 tests pass in both direct-root and Coderange-prefix configurations. With the default Coderange configuration, anonymous requests redirect to `/proxy/8000/login/?next=/proxy/8000/` and generated application links remain under `/proxy/8000/`.
+Authentication, product browsing, shopping cart, and redirect-prefix handling are merged into `main`. Django's system check passes and 32 tests pass in both direct-root and Coderange-prefix configurations. With the default Coderange configuration, generated HTML links remain under `/proxy/8000/`, while redirect responses use unprefixed Django paths for Coderange to prefix exactly once.
 
 ## Authentication
 
@@ -15,6 +15,18 @@ The authentication and product browsing features are merged into `main`. Django'
 - Successful login redirects to `/`.
 - `/` requires authentication and greets the user by username.
 - The coderange forwarding origin is trusted for Django CSRF protection during development.
+- Application redirects use unprefixed paths because Coderange automatically prefixes redirect `Location` headers.
+
+## Shopping Cart
+
+- Authenticated users can add a product from `/products/<id>/` with a quantity from 1 through 99.
+- Repeated additions increment the existing user/product cart row.
+- `/cart/` displays the current user's products, unit prices, quantities, and line totals.
+- Cart rows are persisted in SQLite through the `CartItem` model and isolated by authenticated user.
+- Product deletion is protected while a cart row references the product.
+- Checkout, cart update/remove controls, purchases, and transaction history are not implemented yet.
+
+Application-generated named redirects should use `core.utils.redirect_without_script_prefix()` rather than Django's plain `redirect()` while the Coderange prefix configuration is active. This keeps redirect headers unprefixed for the proxy while preserving `FORCE_SCRIPT_NAME` for normal template URL generation.
 
 ## Product Browsing
 
@@ -63,6 +75,12 @@ Run the authentication checks with:
 ```bash
 python manage.py check
 python manage.py test core
+```
+
+Load representative products for manual cart verification with:
+
+```bash
+python manage.py loaddata products
 ```
 
 ## Workflow

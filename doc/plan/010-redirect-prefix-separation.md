@@ -46,7 +46,7 @@
 - [x] Run the full Django test suite in both supported prefix configurations.
 - [x] Load sample products and manually exercise login, product detail, add-to-cart, and cart navigation.
 - [x] Confirm the local add-to-cart response `Location` is `/cart/`, not `/proxy/8000/cart/`.
-- [ ] Re-run the live add-to-cart flow through Coderange and confirm the final response `Location` is exactly `/proxy/8000/cart/`. This requires user UI verification.
+- [x] Re-run the live add-to-cart flow through Coderange and confirm the final response `Location` is exactly `/proxy/8000/cart/`. User verified this through the UI.
 - [x] Confirm regular HTML links and form actions remain under `/proxy/8000/`.
 - [x] Inspect the diff for temporary probe code, credentials, databases, virtual environments, and unrelated changes.
 - [x] Commit with a Conventional Commit message such as `fix: separate redirect and link prefixes`.
@@ -54,9 +54,9 @@
 
 ## Rendezvous and Wiki Sync
 
-- [ ] Verify the implementation branch, tests, and commit history.
-- [ ] Merge the redirect-prefix fix into `main` without overwriting unrelated changes.
-- [ ] Re-run checks, tests, and live-prefix smoke verification on merged `main`.
-- [ ] Confirm the merged application starts and redirects correctly through Coderange.
+- [x] Verify the implementation branch, tests, and commit history.
+- [x] Merge the redirect-prefix fix into `main` without overwriting unrelated changes.
+- [x] Re-run checks, tests, and live-prefix smoke verification on merged `main`.
+- [x] Confirm the merged application starts and redirects correctly through Coderange.
 - [ ] Push the merged `main` branch to `origin`.
 - [ ] Update `doc/wiki/` with the redirect-prefix contract, helper convention, authentication redirect behavior, and verification commands.
